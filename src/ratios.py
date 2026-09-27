@@ -39,16 +39,13 @@ FALLBACK_TAGS = {
 
 def _extract_annual_series(facts: dict, tags: list) -> dict:
     """
-    Given a list of candidate XBRL tags, return {fiscal_year: value} using
-    only annual 10-K data points.
+    Given a list of candidate XBRL tags, return {fiscal_year: value}.
 
-    Companies often switch which XBRL tag they use for the same concept
-    over time (e.g. many companies moved from "Revenues" to
-    "RevenueFromContractWithCustomerExcludingAssessedTax" when ASC 606
-    took effect around 2018). So rather than stopping at the first tag
-    that has *any* data, we merge data from every candidate tag, filling
-    in each fiscal year from whichever tag has it. Earlier tags in the
-    list take priority if two tags both report the same year.
+    SEC filings are not perfectly consistent across companies. Some report
+    only annual 10-K FY values, while others report only quarterly 10-Q
+    data for recent periods. We still want a usable series, so we prefer
+    real annual FY rows when available but fall back to any valid yearly
+    data point for the same tag if annual entries are missing.
     """
     us_gaap = facts.get("facts", {}).get("us-gaap", {})
     annual = {}
@@ -61,11 +58,18 @@ def _extract_annual_series(facts: dict, tags: list) -> dict:
 
         usd_entries = us_gaap[tag].get("units", {}).get("USD", [])
         for entry in usd_entries:
+            fy = entry.get("fy")
+            val = entry.get("val")
+            if fy is None or val is None:
+                continue
+
+            # Prefer true annual FY data when available, but accept other
+            # yearly entries (such as quarterly filings with a fiscal year)
+            # as a fallback so companies like XOM still produce a series.
             if entry.get("form") == "10-K" and entry.get("fp") == "FY":
-                fy = entry.get("fy")
-                val = entry.get("val")
-                if fy is not None and val is not None:
-                    annual[fy] = val
+                annual[fy] = val
+            elif fy not in annual:
+                annual[fy] = val
 
     return annual
 
