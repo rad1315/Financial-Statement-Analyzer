@@ -77,12 +77,6 @@ use `Liabilities`, others break it into current/non-current only). The
 code includes fallback logic for the most common tag variations, but if
 you hit a `KeyError` or missing value for a specific company, that's a
 great opportunity to inspect the raw JSON (`data.sec.gov/api/xbrl/companyfacts/`)
-and extend the mapping — this is a realistic part of working with real
-filings, not a bug in the sense of "something's wrong with your code."
+and extend the mapping.
 
-## A note for your write-up / resume
 
-Keep a short analysis memo (even just `analysis/aapl_memo.md`) alongside
-the code — 2-3 paragraphs interpreting what the ratios actually mean for
-the company's financial health. That's the piece that makes this an
-*accounting* project instead of a coding exercise.
